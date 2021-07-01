@@ -4,24 +4,9 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-const todoItems = [
-  {
-    task: "Get pizza for dinner",
-    complete: false,
-  },
-  {
-    task: "Finish the merit challenge",
-    complete: false,
-  },
-  {
-    task: "Todo 3",
-    complete: true,
-  },
-];
-
 ReactDOM.render(
   <React.StrictMode>
-    <App todoItems={todoItems} />
+    <App />
   </React.StrictMode>,
   document.getElementById('root')
 );

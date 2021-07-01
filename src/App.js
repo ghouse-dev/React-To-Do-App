@@ -1,13 +1,15 @@
 import "./App.scss";
 import React, { useRef, useEffect } from "react";
+import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheck, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 
 const TodoInput = (props) => {
   const inputRef = useRef();
   const [newItem, setNewItem] = React.useState({
-    task: "",
-    complete: false,
+    id: Math.random(),
+    title: "",
+    completed: false,
   });
 
   useEffect(() => {
@@ -19,7 +21,7 @@ const TodoInput = (props) => {
     if (event !== undefined) {
       setNewItem({
         ...newItem,
-        task: newValue,
+        title: newValue,
       });
     }
   };
@@ -27,10 +29,10 @@ const TodoInput = (props) => {
   const handleSubmit = (e) => {
     console.log(e);
     e.preventDefault();
-    if (newItem.task !== "") {
+    if (newItem.title !== "") {
       props.addItem(newItem);
       e.target.reset();
-      setNewItem({ ...newItem, task: "" });
+      setNewItem({ ...newItem, title: "" });
     }
   };
 
@@ -57,27 +59,29 @@ const TodoInput = (props) => {
 };
 
 const TodoList = (props) => {
+  console.log(props);
   const completed = [];
   const notComplete = props.list.filter((e, index) => {
     e.index = index;
-    if (!e.complete) {
+    if (!e.completed) {
       return e;
     } else {
       completed.push(e);
     }
   });
+  console.log(notComplete);
   return (
     <div>
       <ul className="todo__list">
         {notComplete.map((el) => {
           return (
-            <li className="todo__list__item">
-              <p>{el.task}</p>
+            <li className="todo__list__item" key={el.id}>
+              <p>{el.title}</p>
               <div className="todo__list__options">
-                <span onClick={() => props.completeItem(el.index)}>
+                <span onClick={() => props.completeItem(el.id)}>
                   <FontAwesomeIcon icon={faCheck} />
                 </span>
-                <span onClick={() => props.removeItem(el.index)}>
+                <span onClick={() => props.removeItem(el.id)}>
                   <FontAwesomeIcon icon={faTimes} />
                 </span>
               </div>
@@ -89,11 +93,16 @@ const TodoList = (props) => {
       <ul className="todo__list todo__list--completed">
         {completed.map((el) => {
           return (
-            <li className="todo__list__item complete">
-              <p>{el.task}</p>
+            <li className="todo__list__item complete" key={el.id}>
+              <p>{el.title}</p>
+              {/* <div className="todo__list__options"> */}
               <span>
                 <FontAwesomeIcon icon={faCheck} />
               </span>
+              {/* <span onClick={() => props.removeItem(el.id)}>
+                  <FontAwesomeIcon icon={faTimes} />
+                </span> */}
+              {/* </div> */}
             </li>
           );
         })}
@@ -103,24 +112,48 @@ const TodoList = (props) => {
 };
 
 function App(props) {
-  const [list, setList] = React.useState(props.todoItems);
+  const todos = [
+    {
+      userId: 1,
+      id: 1,
+      title: "delectus aut autem",
+      completed: false,
+      index: 0,
+    },
+  ];
+  const [data, setData] = React.useState(todos);
+
+  useEffect(async () => {
+    const result = await axios(
+      "https://jsonplaceholder.typicode.com/todos?_limit=5"
+    );
+    setData(result.data);
+  }, []);
+
   const addItem = (item) => {
-    setList((list) => [...list, item]);
+    console.log(item);
+    axios
+      .post("https://jsonplaceholder.typicode.com/todos", item)
+      .then((res) => {
+        setData([...data, res.data]);
+      });
   };
 
-  const removeItem = (index) => {
-    console.log(index);
-    let newList = [...list];
-    newList.splice(index, 1);
-    setList(newList);
-    console.log("item removed");
+  const removeItem = (id) => {
+    axios
+      .delete(`https://jsonplaceholder.typicode.com/todos/${id}`)
+      .then((res) => setData(data.filter((todo) => todo.id !== id)));
   };
 
-  const completeItem = (index) => {
-    let arr2 = [...list];
-    arr2[index].complete = true;
-    setList(arr2);
-    console.log("item complete");
+  const completeItem = (id) => {
+    setData(
+      data.map((todo) => {
+        if (todo.id === id) {
+          todo.completed = !todo.completed;
+        }
+        return todo;
+      })
+    );
   };
 
   return (
@@ -128,7 +161,7 @@ function App(props) {
       <div className="todo">
         <TodoInput addItem={addItem} />
         <TodoList
-          list={list}
+          list={data}
           removeItem={removeItem}
           completeItem={completeItem}
         />
