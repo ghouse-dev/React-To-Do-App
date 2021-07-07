@@ -5,7 +5,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 # List of Packages
 
 1. Node SASS
-2. Font Awesome
+2. Material UI
 
 ## Available Scripts
 
