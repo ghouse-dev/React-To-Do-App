@@ -1,115 +1,15 @@
 import "./App.scss";
-import React, { useRef, useEffect } from "react";
+import React, { useEffect } from "react";
 import axios from "axios";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheck, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import TodoList from "./components/TodoList";
+import Snackbar from "@material-ui/core/Snackbar";
+import MuiAlert from "@material-ui/lab/Alert";
+import { Container } from "@material-ui/core";
+import TodoInput from "./components/TodoInput";
 
-const TodoInput = (props) => {
-  const inputRef = useRef();
-  const [newItem, setNewItem] = React.useState({
-    id: Math.random(),
-    title: "",
-    completed: false,
-  });
-
-  useEffect(() => {
-    inputRef.current.focus();
-  }, []);
-
-  const handleChange = (event) => {
-    const newValue = event.target.value;
-    if (event !== undefined) {
-      setNewItem({
-        ...newItem,
-        title: newValue,
-      });
-    }
-  };
-
-  const handleSubmit = (e) => {
-    console.log(e);
-    e.preventDefault();
-    if (newItem.title !== "") {
-      props.addItem(newItem);
-      e.target.reset();
-      setNewItem({ ...newItem, title: "" });
-    }
-  };
-
-  return (
-    <form
-      ref={inputRef}
-      className="todo__input"
-      onSubmit={(e) => {
-        handleSubmit(e);
-      }}
-    >
-      <input
-        type="text"
-        onChange={(e) => {
-          handleChange(e);
-        }}
-        placeholder="Add a task here..."
-      />
-      <button type="submit" className="btn btn-default">
-        <FontAwesomeIcon icon={faPlus} />
-      </button>
-    </form>
-  );
-};
-
-const TodoList = (props) => {
-  console.log(props);
-  const completed = [];
-  const notComplete = props.list.filter((e, index) => {
-    e.index = index;
-    if (!e.completed) {
-      return e;
-    } else {
-      completed.push(e);
-    }
-  });
-  console.log(notComplete);
-  return (
-    <div>
-      <ul className="todo__list">
-        {notComplete.map((el) => {
-          return (
-            <li className="todo__list__item" key={el.id}>
-              <p>{el.title}</p>
-              <div className="todo__list__options">
-                <span onClick={() => props.completeItem(el.id)}>
-                  <FontAwesomeIcon icon={faCheck} />
-                </span>
-                <span onClick={() => props.removeItem(el.id)}>
-                  <FontAwesomeIcon icon={faTimes} />
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      <ul className="todo__list todo__list--completed">
-        {completed.map((el) => {
-          return (
-            <li className="todo__list__item complete" key={el.id}>
-              <p>{el.title}</p>
-              {/* <div className="todo__list__options"> */}
-              <span>
-                <FontAwesomeIcon icon={faCheck} />
-              </span>
-              {/* <span onClick={() => props.removeItem(el.id)}>
-                  <FontAwesomeIcon icon={faTimes} />
-                </span> */}
-              {/* </div> */}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-};
+function Alert(props) {
+  return <MuiAlert elevation={6} variant="filled" {...props} />;
+}
 
 function App(props) {
   const todos = [
@@ -122,27 +22,34 @@ function App(props) {
     },
   ];
   const [data, setData] = React.useState(todos);
+  const [open, setOpen] = React.useState(false);
+  const [severity, setSeverity] = React.useState("warning");
+  const [message, setMessage] = React.useState("");
 
-  useEffect(async () => {
-    const result = await axios(
-      "https://jsonplaceholder.typicode.com/todos?_limit=5"
-    );
-    setData(result.data);
+  useEffect(() => {
+    async function fetchData() {
+      const result = await axios("http://localhost:3000/api/todos");
+      setData(result.data);
+    }
+    fetchData();
   }, []);
 
   const addItem = (item) => {
-    console.log(item);
-    axios
-      .post("https://jsonplaceholder.typicode.com/todos", item)
-      .then((res) => {
-        setData([...data, res.data]);
-      });
+    axios.post("http://localhost:3000/api/todos", item).then((res) => {
+      setData([...data, res.data]);
+      setOpen(true);
+      setSeverity("success");
+      setMessage("New task added successfully!");
+    });
   };
 
   const removeItem = (id) => {
-    axios
-      .delete(`https://jsonplaceholder.typicode.com/todos/${id}`)
-      .then((res) => setData(data.filter((todo) => todo.id !== id)));
+    axios.delete(`http://localhost:3000/api/todos/${id}`).then((res) => {
+      setData(data.filter((todo) => todo.id != id));
+      setOpen(true);
+      setSeverity("warning");
+    });
+    setMessage("Task removed successfully!");
   };
 
   const completeItem = (id) => {
@@ -156,16 +63,32 @@ function App(props) {
     );
   };
 
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+
+    setOpen(false);
+  };
+
   return (
     <div className="App">
-      <div className="todo">
-        <TodoInput addItem={addItem} />
-        <TodoList
-          list={data}
-          removeItem={removeItem}
-          completeItem={completeItem}
-        />
-      </div>
+      <Container maxWidth="md">
+        <div className="todo">
+          <h4>Add a New Task here:</h4>
+          <TodoInput addItem={addItem} />
+          <TodoList
+            list={data}
+            removeItem={removeItem}
+            completeItem={completeItem}
+          />
+        </div>
+        <Snackbar open={open} autoHideDuration={3000} onClose={handleClose}>
+          <Alert onClose={handleClose} severity={severity}>
+            {message}
+          </Alert>
+        </Snackbar>
+      </Container>
     </div>
   );
 }
